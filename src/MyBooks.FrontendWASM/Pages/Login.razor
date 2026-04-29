@@ -1,0 +1,51 @@
+﻿@page "/login"
+@inject UserSession Session
+@inject NavigationManager Nav
+
+<div class="min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="card bg-dark border-secondary" style="width: 360px; background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);">
+        <div class="card-body p-4">
+
+            <div class="text-center mb-4">
+                <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3"
+                     style="width:52px; height:52px;">
+                    <span class="text-white fw-bold" style="font-size:20px;">M</span>
+                </div>
+                <h4 class="text-white fw-semibold mb-1">Welcome to MyBooks</h4>
+                <p class="text-white-50 mb-0" style="font-size:13px;">Enter your nickname to continue</p>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-white-50" style="font-size:12px;">NICKNAME</label>
+                <input class="form-control bg-dark border-secondary text-white"
+                       placeholder="e.g. john_doe"
+                       @bind="nickname" />
+            </div>
+
+            <div class="text-center mt-3" style="margin-bottom: 16px;">
+                <span class="badge bg-info text-dark">
+                    Test login: use <strong>Bob</strong>
+                </span>
+            </div>
+
+            <button class="btn btn-primary w-100 fw-semibold" @onclick="UserLogin">
+                Login
+            </button>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private string nickname = "";
+
+    private async Task UserLogin()
+    {
+        if (!string.IsNullOrWhiteSpace(nickname))
+        {
+            await Session.Login(nickname);
+
+            Nav.NavigateTo("/");
+        }
+    }
+}

@@ -1,0 +1,29 @@
+﻿@inherits LayoutComponentBase
+@inject UserSession Session
+@inject NavigationManager Nav
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <article class="content px-4">
+            @if (!Session.IsLoggedIn && !IsLoginPage)
+            {
+                Nav.NavigateTo("/login", true);
+            }
+            else
+            {
+                @Body
+            }
+        </article>
+    </main>
+</div>
+
+@code {
+    private bool IsLoginPage =>
+        Nav.ToBaseRelativePath(Nav.Uri)
+           .Trim('/')
+           .Equals("login", StringComparison.OrdinalIgnoreCase);
+}

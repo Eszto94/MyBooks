@@ -1,0 +1,185 @@
+﻿<div class="min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="card bg-dark border-secondary" style="width: 480px; background: linear-gradient(180deg, rgb(5,39,103) 0%, #3a0647 70%);">
+        <div class="card-body p-4">
+
+            <div class="d-flex align-items-center gap-2 mb-4">
+                <button class="btn btn-sm btn-outline-secondary text-white" @onclick="OnBackClick">
+                    <span class="bi bi-arrow-left"></span>
+                </button>
+                <h5 class="text-white fw-semibold mb-0">Book</h5>
+            </div>
+
+            @if (ErrorMessage != null)
+            {
+                <div class="alert alert-danger">@ErrorMessage</div>
+            }
+
+            @if (SuccessMessage != null)
+            {
+                <div class="alert alert-success">@SuccessMessage</div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label text-white-50" style="font-size:12px;">ISBN</label>
+                <input class="form-control bg-dark border-secondary text-white"
+                       placeholder="e.g. 978-0141182636"
+                       disabled="@isEditing"
+                       @bind="Book.ISBN" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-white-50" style="font-size:12px;">TITLE</label>
+                <input class="form-control bg-dark border-secondary text-white"
+                       placeholder="e.g. The Great Gatsby"
+                       @bind="Book.Title" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-white-50" style="font-size:12px;">AUTHORS</label>
+                <div class="d-flex gap-2 mb-2">
+                    <input class="form-control bg-dark border-secondary text-white"
+                           placeholder="Add an author"
+                           @bind="authorInput"
+                           @onkeydown="HandleAuthorKey" />
+                    <button class="btn btn-outline-secondary text-white flex-shrink-0" @onclick="AddAuthor">
+                        <span class="bi bi-plus-lg"></span>
+                    </button>
+                </div>
+                @if (Book.Authors.Any())
+                {
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var author in Book.Authors)
+                        {
+                            <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-25 d-flex align-items-center gap-1"
+                                  style="font-size:12px;">
+                                @author
+                                <span class="bi bi-x" style="cursor:pointer;" @onclick="() => RemoveAuthor(author)"></span>
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label text-white-50" style="font-size:12px;">CATEGORY</label>
+                <select class="form-select bg-dark border-secondary text-white" @bind="Book.Category">
+                    <option value="">Select a category...</option>
+                    <option>Classic</option>
+                    <option>Programming</option>
+                    <option>Science</option>
+                    <option>History</option>
+                    <option>Fiction</option>
+                    <option>Non-Fiction</option>
+                    <option>Biography</option>
+                    <option>Other</option>
+                </select>
+            </div>
+
+            <button class="btn btn-primary w-100 fw-semibold"
+                    @onclick="Submit"
+                    disabled="@IsLoading">
+                @if (IsLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                }
+                @(isEditing ? "Save Changes" : "Create Book")
+            </button>
+            @if (isEditing)
+            {
+                <button class="btn btn-outline-secondary text-white w-100 mt-2"
+                        @onclick="OnDeleteClick"
+                        disabled="@IsLoading">
+                    Delete Book
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Book Book { get; set; } = null!;
+
+    [Parameter]
+    public bool IsLoading { get; set; }
+
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    [Parameter]
+    public string? SuccessMessage { get; set; }
+
+    [Parameter]
+    public EventCallback<Book> OnSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback<Book> OnDelete { get; set; }
+
+    [Parameter]
+    public EventCallback OnBack { get; set; }
+
+    private string authorInput = string.Empty;
+    private bool isEditing = false;
+
+    protected override void OnInitialized()
+    {
+        isEditing = !string.IsNullOrEmpty(Book.ISBN);
+
+        base.OnInitialized();
+    }
+
+    private void AddAuthor()
+    {
+        var trimmed = authorInput.Trim();
+
+        if (!string.IsNullOrEmpty(trimmed) && !Book.Authors.Contains(trimmed))
+        {
+            Book.Authors.Add(trimmed);
+        }
+
+        authorInput = string.Empty;
+    }
+
+    private void RemoveAuthor(string author) => Book.Authors.Remove(author);
+
+    private void HandleAuthorKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddAuthor();
+        }
+    }
+
+    private async Task Submit()
+    {
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        if (string.IsNullOrWhiteSpace(Book.ISBN) ||
+            string.IsNullOrWhiteSpace(Book.Title) ||
+            string.IsNullOrWhiteSpace(Book.Category) ||
+            !Book.Authors.Any())
+        {
+            ErrorMessage = "Please fill in all fields and add at least one author.";
+            return;
+        }
+
+        IsLoading = true;
+
+        await OnSubmit.InvokeAsync(Book);
+    }
+
+    private async Task OnDeleteClick()
+    {
+        ErrorMessage = null;
+        SuccessMessage = null;
+        IsLoading = true;
+
+        await OnDelete.InvokeAsync(Book);
+    }
+
+    private async Task OnBackClick()
+    {
+        await OnBack.InvokeAsync();
+    }
+}

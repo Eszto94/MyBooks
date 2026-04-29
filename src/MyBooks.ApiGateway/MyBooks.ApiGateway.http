@@ -1,0 +1,6 @@
+@MyBooks.ApiGateway_HostAddress = http://localhost:5225
+
+GET {{MyBooks.ApiGateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

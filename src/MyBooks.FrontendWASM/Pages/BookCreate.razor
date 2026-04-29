@@ -1,0 +1,53 @@
+﻿@page "/create-book"
+
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<BookEdit Book="book"
+    IsLoading="isLoading"
+    ErrorMessage="@errorMessage"
+    SuccessMessage="@successMessage"
+    OnSubmit="Submit"
+    OnBack="OnBackClick" />
+
+@code {
+    private Book book = new();
+
+    private bool isLoading;
+    private string? errorMessage;
+    private string? successMessage;
+
+    private async Task Submit(Book book)
+    {
+        this.book = book;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("books", book);
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "Book created successfully!";
+                await Task.Delay(1000);
+                Nav.NavigateTo("books");
+            }
+            else
+            {
+                errorMessage = $"Failed to create book. Status: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnBackClick()
+    {
+        Nav.NavigateTo("books");
+    }
+}

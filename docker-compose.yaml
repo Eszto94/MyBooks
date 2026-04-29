@@ -1,0 +1,83 @@
+services:
+  api-gateway:
+    container_name: mybooks-api-gateway
+    build:
+      context: .
+      dockerfile: src/MyBooks.ApiGateway/Dockerfile
+    ports:
+      - "5000:80"
+    depends_on:
+      - rabbitmq
+
+  book-service-mongodb:
+    container_name: mybooks-book-service-mongodb
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - bookservice-db:/data/db
+
+  bookmanagement-service-mongodb:
+    container_name: mybooks-bookmanagement-service-mongodb
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    volumes:
+      - bookmanagementservice-db:/data/db
+
+  user-service-mongodb:
+    container_name: mybooks-user-service-mongodb
+    image: mongo:latest
+    ports:
+      - "27019:27017"
+    volumes:
+      - userservice-db:/data/db
+
+  book-service:
+    container_name: mybooks-book-service
+    build:
+      context: .
+      dockerfile: src/MyBooks.BookService/Dockerfile
+    ports:
+      - "5001:80"
+    depends_on:
+      - api-gateway
+      - book-service-mongodb
+
+  bookmanagement-service:
+    container_name: mybooks-bookmanagement-service
+    build:
+      context: .
+      dockerfile: src/MyBooks.BookManagementService/Dockerfile
+    ports:
+      - "5002:80"
+    depends_on:
+      - api-gateway
+      - bookmanagement-service-mongodb
+
+  user-service:
+    container_name: mybooks-user-service
+    build:
+      context: .
+      dockerfile: src/MyBooks.UserService/Dockerfile
+    ports:
+      - "5003:80"
+    depends_on:
+      - api-gateway
+      - user-service-mongodb
+
+# rabbitmq
+  rabbitmq:
+    container_name: mybooks-rabbitmq
+    image: rabbitmq:4-management
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+volumes:
+  bookservice-db:
+  bookmanagementservice-db:
+  userservice-db:
+  rabbitmq-data:

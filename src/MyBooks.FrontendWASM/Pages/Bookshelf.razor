@@ -1,0 +1,252 @@
+﻿@page "/bookshelf"
+@inject HttpClient Http
+@inject UserSession Session
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 class="text-white fw-semibold mb-0">
+        <span class="bi bi-bookshelf me-2"></span>Bookshelf
+    </h4>
+    <div class="btn-group" role="group">
+        <button class="btn btn-sm @(view == "mine" ? "btn-primary" : "btn-outline-secondary text-primary")"
+                @onclick='() => SetView("mine")'>
+            My Shelf
+        </button>
+        <button class="btn btn-sm @(view == "friends" ? "btn-primary" : "btn-outline-secondary text-primary")"
+                @onclick='() => SetView("friends")'>
+            Friends
+        </button>
+    </div>
+</div>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (loadError != null)
+{
+    <div class="alert alert-danger">@loadError</div>
+}
+else if (view == "mine")
+{
+    @if (!myShelf.Any())
+    {
+        <div class="text-center py-5">
+            <p class="text-primary">
+                No books on your shelf yet. Add some from the
+                <a href="books" class="text-primary">book list</a>.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+            @foreach (var item in myShelf)
+            {
+                var book = GetBook(item.BookISBN);
+
+                <div class="col">
+                    <div class="card border-secondary h-100"
+                         style="background: linear-gradient(180deg, rgb(5,39,103) 0%, #3a0647 70%);">
+                        <div class="card-body">
+                            <h6 class="text-white fw-semibold mb-1">@(book?.Title ?? item.BookISBN)</h6>
+                            <p class="text-white-50 mb-3" style="font-size:12px;">
+                                @(book != null ? string.Join(", ", book.Authors) : "")
+                            </p>
+                            <div>
+                                <label class="text-white-50 mb-1" style="font-size:11px;">VISIBILITY</label>
+                                <select class="form-select form-select-sm bg-dark border-secondary text-white"
+                                        value="@item.Visibility"
+                                        @onchange="(e) => ChangeVisibility(item, e.Value!.ToString()!)">
+                                    <option value="@VisibilityStatus.Private">Private</option>
+                                    <option value="@VisibilityStatus.FriendOnly">Friends Only</option>
+                                    <option value="@VisibilityStatus.Public">Public</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-footer border-secondary d-flex align-items-center justify-content-between">
+                            <span class="@GetVisibilityBadgeClass(item.Visibility)" style="font-size:11px;">
+                                @GetVisibilityLabel(item.Visibility)
+                            </span>
+                            @if (item.BookISBN != null)
+                            {
+                                <span class="text-white-50" style="font-size:11px;">@item.BookISBN</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+else
+{
+    @if (!friends.Any())
+    {
+        <div class="text-center py-5">
+            <p class="text-white-50">
+                You have no friends added yet. Add some from the
+                <a href="friends" class="text-primary">friends page</a>.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="mb-3 d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm @(selectedFriend == null ? "btn-primary" : "btn-outline-secondary text-primary")"
+                    @onclick="() => selectedFriend = null">
+                All Friends
+            </button>
+            @foreach (var friend in friends)
+            {
+                var friendName = friend.UserId == currentUser?.Id
+                    ? GetUserName(friend.FriendId)
+                    : GetUserName(friend.UserId);
+
+                <button class="btn btn-sm @(selectedFriend?.Id == friend.Id ? "btn-primary" : "btn-outline-secondary text-primary")"
+                        @onclick="() => selectedFriend = friend">
+                    @friendName
+                </button>
+            }
+        </div>
+
+        var visibleBooks = friendShelf
+            .Where(x => selectedFriend == null || x.UserId == selectedFriend.UserId || x.UserId == selectedFriend.FriendId)
+            .ToList();
+
+        @if (!visibleBooks.Any())
+        {
+            <div class="text-center py-5">
+                <p class="text-white-50">No visible books from friends.</p>
+            </div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                @foreach (var item in visibleBooks)
+                {
+                    var book = GetBook(item.BookISBN);
+                    var friendName = allUsers.FirstOrDefault(f => f.Id == item.UserId)?.Name ?? "Friend";
+
+                    <div class="col">
+                        <div class="card border-secondary h-100"
+                             style="background: linear-gradient(180deg, #0a2744 0%, #2d0a3a 70%);">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 class="text-white fw-semibold mb-0">@(book?.Title ?? item.BookISBN)</h6>
+                                    <span class="@GetVisibilityBadgeClass(item.Visibility)" style="font-size:10px;">
+                                        @GetVisibilityLabel(item.Visibility)
+                                    </span>
+                                </div>
+                                <p class="text-white-50 mb-2" style="font-size:12px;">
+                                    @(book != null ? string.Join(", ", book.Authors) : "")
+                                </p>
+                                @if (book != null)
+                                {
+                                    <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25"
+                                          style="font-size:11px;">
+                                        @book.Category
+                                    </span>
+                                }
+                            </div>
+                            <div class="card-footer border-secondary">
+                                <span class="bi bi-person me-1 text-white-50" style="font-size:11px;"></span>
+                                <span class="text-white-50" style="font-size:11px;">@friendName</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+}
+
+@code {
+    private string view = "mine";
+    private bool isLoading = true;
+    private string? loadError;
+
+    private List<BookVisibility> myShelf = new();
+    private List<BookVisibility> friendShelf = new();
+    private List<Book> allBooks = new();
+    private List<UserFriend> friends = new();
+    private List<User> allUsers = new();
+    private User? currentUser;
+    private string? currentUserId;
+    private UserFriend? selectedFriend;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            allUsers = await Http.GetFromJsonAsync<List<User>>("users") ?? new();
+            currentUser = allUsers.FirstOrDefault(u => u.Name == Session.Nickname);
+            currentUserId = currentUser?.Id;
+
+            if (currentUser != null)
+            {
+                friends = (await Http.GetFromJsonAsync<List<UserFriend>>($"users/friend?userId={currentUser.Id}") ?? new());
+            }
+
+            allBooks = await Http.GetFromJsonAsync<List<Book>>("books") ?? new();
+            myShelf = await Http.GetFromJsonAsync<List<BookVisibility>>($"bookmanagement/mybooks/{currentUserId}") ?? new();
+
+            foreach (var friend in friends)
+            {
+                var friendId = friend.UserId == currentUserId ? friend.FriendId : friend.UserId;
+
+                var friendBooks = await Http.GetFromJsonAsync<List<BookVisibility>>($"bookmanagement/mybooks/{friendId}") ?? new();
+
+                friendShelf.AddRange(friendBooks.Where(b =>
+                    b.Visibility == VisibilityStatus.Public ||
+                    b.Visibility == VisibilityStatus.FriendOnly));
+            }
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load bookshelf: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ChangeVisibility(BookVisibility item, string value)
+    {
+        if (Enum.TryParse<VisibilityStatus>(value, out var status))
+        {
+            item.Visibility = status;
+            await Http.PutAsJsonAsync($"bookmanagement/mybooks/{item.Id}", item);
+        }
+    }
+
+    private void SetView(string v)
+    {
+        view = v;
+        selectedFriend = null;
+    }
+
+    private Book? GetBook(string isbn) =>
+        allBooks.FirstOrDefault(b => b.ISBN == isbn);
+
+    private string GetVisibilityLabel(VisibilityStatus status) => status switch
+    {
+        VisibilityStatus.Public => "Public",
+        VisibilityStatus.FriendOnly => "Friends Only",
+        VisibilityStatus.Private => "Private",
+        _ => "Unknown"
+    };
+
+    private string GetVisibilityBadgeClass(VisibilityStatus status) => status switch
+    {
+        VisibilityStatus.Public => "badge bg-success bg-opacity-25 text-success border border-success border-opacity-25",
+        VisibilityStatus.FriendOnly => "badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25",
+        VisibilityStatus.Private => "badge bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-25",
+        _ => "badge bg-secondary"
+    };
+
+    private string? GetUserName(string? userId) =>
+        allUsers.FirstOrDefault(u => u.Id == userId)?.Name;
+}

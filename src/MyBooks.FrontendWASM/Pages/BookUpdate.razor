@@ -1,0 +1,115 @@
+﻿@page "/edit-book/{isbn}"
+
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+@if (loadError != null)
+{
+    <div class="alert alert-danger">@loadError</div>
+}
+else if (book == null)
+{
+    <div class="d-flex justify-content-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <BookEdit Book="book"
+              IsLoading="isLoading"
+              ErrorMessage="@errorMessage"
+              SuccessMessage="@successMessage"
+              OnSubmit="Submit"
+              OnDelete="Delete"
+              OnBack="OnBackClick" />
+}
+
+@code {
+    [Parameter]
+    public string ISBN { get; set; } = string.Empty;
+
+    private Book? book;
+    private bool isLoading;
+    private string? errorMessage;
+    private string? successMessage;
+    private string? loadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            book = await Http.GetFromJsonAsync<Book>($"books/{ISBN}");
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load book: {ex.Message}";
+        }
+    }
+
+    private async Task Submit(Book updatedBook)
+    {
+        errorMessage = null;
+        isLoading = true;
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"books/{ISBN}", updatedBook);
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "Book updated successfully!";
+                await Task.Delay(1000);
+                Nav.NavigateTo("books");
+            }
+            else
+            {
+                errorMessage = $"Failed to update book. Status: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task Delete(Book bookToDelete)
+    {
+        errorMessage = null;
+        isLoading = true;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"books/{bookToDelete.ISBN}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "Book deleted successfully!";
+                await Task.Delay(1000);
+                Nav.NavigateTo("books");
+            }
+            else
+            {
+                errorMessage = $"Failed to delete book. Status: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnBackClick()
+    {
+        Nav.NavigateTo("books");
+    }
+}

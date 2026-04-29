@@ -1,0 +1,170 @@
+﻿@page "/"
+@page "/books"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject UserSession Session
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="text-white fw-semibold mb-0">Book List</h4>
+    <button class="btn btn-primary btn-sm" @onclick='() => Nav.NavigateTo("create-book")'>
+        <span class="bi bi-plus-lg me-1"></span> Add Book
+    </button>
+</div>
+
+<div class="btn-group mb-4" role="group">
+    <button class="btn btn-sm @(filter == "all" ? "btn-primary" : "btn-outline-secondary text-primary")"
+            @onclick='() => SetFilter("all")'>
+        All
+    </button>
+    <button class="btn btn-sm @(filter == "mine" ? "btn-primary" : "btn-outline-secondary text-primary")"
+            @onclick='() => SetFilter("mine")'>
+        Mine
+    </button>
+</div>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+else if (!FilteredBooks.Any())
+{
+    <div class="text-center py-5">
+        <p class="text-white-50">No books found.</p>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+        @foreach (var book in FilteredBooks)
+        {
+            var isOwned = myBookISBNs.Contains(book.ISBN);
+            <div class="col">
+                <div class="card border-secondary h-100"
+                     style="background: linear-gradient(180deg, rgb(5,39,103) 0%, #3a0647 70%);">
+                    <div class="card-body">
+
+                        <div class="d-flex align-items-start justify-content-between mb-3">
+                            <h6 class="text-white fw-semibold mb-0">@book.Title</h6>
+                            @if (isOwned)
+                            {
+                                <span class="badge bg-success ms-2 flex-shrink-0">Owned</span>
+                            }
+                        </div>
+
+                        <div class="mb-2">
+                            <span class="text-white" style="font-size:12px;">AUTHORS</span>
+                            <p class="text-white mb-0" style="font-size:13px;">
+                                @string.Join(", ", book.Authors)
+                            </p>
+                        </div>
+
+                        <div>
+                            <span class="text-white" style="font-size:12px;">CATEGORY</span>
+                            <p class="mb-0">
+                                <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25"
+                                      style="font-size:11px;">
+                                    @book.Category
+                                </span>
+                            </p>
+                        </div>
+
+                    </div>
+                    <div class="card-footer border-secondary d-flex align-items-center justify-content-between">
+                        <span class="text-white" style="font-size:11px;">ISBN: @book.ISBN</span>
+                        <div class="d-flex gap-2">
+                            <a href="edit-book/@book.ISBN" class="btn btn-secondary btn-sm py-1" style="font-size:11px;">
+                                <span class="bi bi-pencil"></span>
+                            </a>
+                            @if (isOwned)
+                            {
+                                <button class="btn btn-danger btn-sm py-1"
+                                        style="font-size:11px;"
+                                        @onclick="() => RemoveFromMine(book.ISBN)">
+                                    <span class="bi bi-dash-lg me-1"></span>Remove
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-success btn-sm py-1"
+                                        style="font-size:11px;"
+                                        @onclick="() => AddToMine(book.ISBN)">
+                                    <span class="bi bi-plus-lg me-1"></span>Add
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Book> books = new();
+    private HashSet<string> myBookISBNs = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string filter = "all";
+
+    private IEnumerable<Book> FilteredBooks => filter == "mine"
+        ? books.Where(b => myBookISBNs.Contains(b.ISBN))
+        : books;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var allBooks = await Http.GetFromJsonAsync<List<Book>>("books");
+            var myBooks = await Http.GetFromJsonAsync<List<BookVisibility>>($"bookmanagement/mybooks/{Session.UserId}");
+
+            books = allBooks ?? new();
+            myBookISBNs = myBooks?.Select(b => b.BookISBN).ToHashSet() ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load books: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SetFilter(string value)
+    {
+        filter = value;
+    }
+
+    private async Task AddToMine(string isbn)
+    {
+        var response = await Http.PostAsJsonAsync("bookmanagement/mybooks", new BookVisibility
+        {
+            BookISBN = isbn,
+            UserId = Session.UserId!
+        });
+
+        if (response.IsSuccessStatusCode)
+        {
+            myBookISBNs.Add(isbn);
+        }
+    }
+
+    private async Task RemoveFromMine(string isbn)
+    {
+        var response = await Http.DeleteAsync($"bookmanagement/mybooks/{Session.UserId}/{isbn}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            myBookISBNs.Remove(isbn);
+        }
+    }
+}
