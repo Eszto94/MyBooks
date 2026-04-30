@@ -254,7 +254,7 @@ else
                     b.Visibility == VisibilityStatus.Public ||
                     b.Visibility == VisibilityStatus.FriendOnly));
             }
-
+            
             publicBooks = await Http.GetFromJsonAsync<List<BookVisibility>>("bookmanagement/mybooks/") ?? new();
         }
         catch (Exception ex)

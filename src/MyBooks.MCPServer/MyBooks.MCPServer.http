@@ -1,0 +1,6 @@
+@MyBooks.MCPServer_HostAddress = http://localhost:5137
+
+GET {{MyBooks.MCPServer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

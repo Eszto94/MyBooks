@@ -3,6 +3,7 @@
   <Project Path="src/MyBooks.BookManagementService/MyBooks.BookManagementService.csproj" />
   <Project Path="src/MyBooks.BookService/MyBooks.BookService.csproj" />
   <Project Path="src/MyBooks.FrontendWASM/MyBooks.FrontendWASM.csproj" Id="5aa23f22-7ed3-4e33-8a58-9030d5f91798" />
+  <Project Path="src/MyBooks.MCPServer/MyBooks.MCPServer.csproj" Id="62621928-3858-41ac-92b4-0a9b5c5942f8" />
   <Project Path="src/MyBooks.Shared/MyBooks.Shared.csproj" Id="ab7ef189-9334-48b0-834f-9e0ec14b3115" />
   <Project Path="src/MyBooks.UserService/MyBooks.UserService.csproj" Id="20a79213-cfba-47fe-9f43-c1b98292abd6" />
 </Solution>
