@@ -5,7 +5,9 @@
 @inject UserSession Session
 
 <div class="d-flex align-items-center justify-content-between mb-4">
-    <h4 class="text-white fw-semibold mb-0">Book List</h4>
+    <h4 class="text-primary fw-semibold mb-0">
+        <span class="bi bi-book-fill me-2"></span>Book List
+    </h4>
     <button class="btn btn-primary btn-sm" @onclick='() => Nav.NavigateTo("create-book")'>
         <span class="bi bi-plus-lg me-1"></span> Add Book
     </button>
@@ -37,7 +39,7 @@ else if (errorMessage != null)
 else if (!FilteredBooks.Any())
 {
     <div class="text-center py-5">
-        <p class="text-white-50">No books found.</p>
+        <p class="text-primary">No books found.</p>
     </div>
 }
 else
