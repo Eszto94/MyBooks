@@ -18,6 +18,11 @@ public class BookVisibilityRepository(IMongoDbConnectionFactory dbFactory) : IBo
         return await MyCollection.Find(x => x.UserId == userId).ToListAsync();
     }
 
+    public async Task<IEnumerable<BookVisibility>> GetAllPublicBooksAsync()
+    {
+        return await MyCollection.Find(x => x.Visibility == VisibilityStatus.Public).ToListAsync();
+    }
+
     public async Task<bool> AddMyBookAsync(BookVisibility mybook)
     {
         var exists = await MyCollection

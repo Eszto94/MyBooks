@@ -16,6 +16,12 @@ public class BookVisibilityController(IBookVisibilityRepository bookVisibilityRe
         return Ok(await bookVisibilityRepository.GetAllMyBooksAsync(userId));
     }
 
+    [HttpGet(Name = "GetPublicBooks")]
+    public async Task<IActionResult> Get()
+    {
+        return Ok(await bookVisibilityRepository.GetAllPublicBooksAsync());
+    }
+
     [HttpPost(Name = "AddMyBook")]
     public async Task<IActionResult> AddMyBook(BookVisibility mybook)
     {

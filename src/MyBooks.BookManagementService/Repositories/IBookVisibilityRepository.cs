@@ -8,6 +8,8 @@ public interface IBookVisibilityRepository
 
     Task<IEnumerable<BookVisibility>> GetAllMyBooksAsync(string userId);
 
+    Task<IEnumerable<BookVisibility>> GetAllPublicBooksAsync();
+
     Task<bool> AddMyBookAsync(BookVisibility mybook);
 
     Task<bool> UpdateMyBookAsync(BookVisibility mybook);
